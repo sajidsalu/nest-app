@@ -50,6 +50,10 @@ export class AppController {
     const jwt = await this.jwtService.signAsync({ id: user.id });
     response.cookie('jwt', jwt, { httpOnly: true });
     return {
+      message: 'successfully logged in ',
+      data: { access_token: jwt, refresh_token: jwt },
+    };
+    return {
       message: 'success',
     };
   }
@@ -58,5 +62,31 @@ export class AppController {
   @UseInterceptors(FileInterceptor('file'))
   uploadFile(@UploadedFile() file: Express.Multer.File) {
     return this.appService.uploadFile(file);
+  }
+
+  @Post('refresh-token')
+  async refreshToken(
+    @Body('refreshToken') refreshToken: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    try {
+      const payload = await this.jwtService.verifyAsync(refreshToken);
+      const user = await this.appService.findOne({ where: { id: payload.id } });
+
+      if (!user) {
+        throw new BadRequestException('User not found');
+      }
+
+      const accessToken = await this.jwtService.signAsync({ id: user.id });
+
+      response.cookie('jwt', accessToken, { httpOnly: true });
+
+      return {
+        message: 'Access token refreshed successfully',
+        data: { access_token: accessToken },
+      };
+    } catch (error) {
+      throw new BadRequestException('Invalid refresh token');
+    }
   }
 }
