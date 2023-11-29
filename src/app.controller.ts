@@ -4,11 +4,14 @@ import {
   Controller,
   Post,
   Res,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { AppService } from './app.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
 @Controller('api')
 export class AppController {
   constructor(
@@ -49,5 +52,11 @@ export class AppController {
     return {
       message: 'success',
     };
+  }
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadFile(@UploadedFile() file: Express.Multer.File) {
+    return this.appService.uploadFile(file);
   }
 }
